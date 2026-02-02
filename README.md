@@ -9,12 +9,21 @@ You know how Claude Code runs in your terminal and can read files, run commands,
 **Text your bot → it runs Claude Code → sends back the response.**
 
 Some things you can do:
-- "What's on my calendar today?" (if Claude has access to your calendar)
+- "What's on my calendar today?"
 - "Search the web for the latest news on X"
-- "Read my notes file and summarize it"
-- "Run my daily briefing skill"
+- "Read my notes and summarize them"
+- "Send me a daily briefing every morning at 7am"
 
 It also works the other way - Claude can message YOU via Telegram (notifications when tasks finish, scheduled briefings, alerts, etc).
+
+**The key is skills.** Out of the box, Claude Code can read files and search the web. But to make it truly YOUR assistant, create skills that give it access to your stuff:
+- Google Calendar (read your schedule)
+- Gmail (read-only access to emails)
+- Notes app (Obsidian, Apple Notes, etc.)
+- Weather for your location
+- Whatever else you want
+
+The `skills/` folder has examples to get you started.
 
 ## Quick Start
 
