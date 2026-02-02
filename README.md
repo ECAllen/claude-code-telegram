@@ -1,6 +1,20 @@
 # claude-code-telegram
 
-Connect Claude Code to Telegram for a personal AI assistant you can message from anywhere.
+A personal AI assistant you can message from anywhere via Telegram.
+
+## What is this?
+
+You know how Claude Code runs in your terminal and can read files, run commands, search the web, etc? This lets you talk to it from your phone via Telegram instead of being tied to your computer.
+
+**Text your bot → it runs Claude Code → sends back the response.**
+
+Some things you can do:
+- "What's on my calendar today?" (if Claude has access to your calendar)
+- "Search the web for the latest news on X"
+- "Read my notes file and summarize it"
+- "Run my daily briefing skill"
+
+It also works the other way - Claude can message YOU via Telegram (notifications when tasks finish, scheduled briefings, alerts, etc).
 
 ## Quick Start
 
@@ -114,9 +128,41 @@ launchctl load ~/Library/LaunchAgents/com.claude.daily-brief.plist
 
 ## Security
 
-- Set `ALLOWED_USERS` to restrict who can use your bot
-- The bot runs Claude with tool access - be mindful of what you allow
-- Never commit your `.env` file
+### ALLOWED_USERS is critical
+
+**Always set `ALLOWED_USERS` in your `.env` file.** If left empty, anyone who discovers your bot's username can send it messages and run Claude with full tool access on your machine.
+
+```bash
+# .env - always set this
+ALLOWED_USERS=123456789
+```
+
+Get your user ID from [@userinfobot](https://t.me/userinfobot) on Telegram.
+
+### Understand the tool access
+
+The bot runs Claude with these tools enabled:
+- `Read` / `Write` / `Edit` - file system access
+- `Bash` - shell command execution
+- `Glob` / `Grep` - file search
+- `WebFetch` / `WebSearch` - internet access
+- `Task` / `Skill` - agent spawning and skill execution
+
+This is powerful and intentional for a personal assistant, but understand that messages you send can trigger real actions on your system.
+
+### Protect your tokens
+
+- Never commit `.env` (already in `.gitignore`)
+- Your bot token lets anyone impersonate your bot
+- Your chat ID lets anyone send you messages via the bot
+
+### Session file
+
+Sessions are stored in `~/.telegram-claude-sessions.json`. Default file permissions apply. On shared systems, consider restricting access:
+
+```bash
+chmod 600 ~/.telegram-claude-sessions.json
+```
 
 ## License
 
