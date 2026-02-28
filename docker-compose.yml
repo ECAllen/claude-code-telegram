@@ -1,0 +1,16 @@
+services:
+  telegram-bot:
+    build: .
+    env_file:
+      - .env
+    environment:
+      - CLAUDE_WORKSPACE=/workspace
+    volumes:
+      # Mount your workspace (should contain CLAUDE.md)
+      - ./workspace:/workspace
+      # Persist Claude session data across restarts
+      - claude-sessions:/root
+    restart: unless-stopped
+
+volumes:
+  claude-sessions:
