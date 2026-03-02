@@ -14,8 +14,16 @@ import subprocess
 import json
 import os
 import html
+import logging
 from pathlib import Path
 import mistune
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+log = logging.getLogger(__name__)
 from telegram import Update
 from telegram.ext import (
     Application,
@@ -148,27 +156,34 @@ def run_claude(message: str, session_id: str = None) -> tuple[str, str]:
     if session_id:
         cmd.extend(["--resume", session_id])
 
+    log.info(f"Running Claude (session={session_id or 'new'})")
     result = subprocess.run(cmd, capture_output=True, text=True, cwd=WORKSPACE)
 
     try:
         data = json.loads(result.stdout)
         response = data.get("result", "No response")
         new_session_id = data.get("session_id")
+        log.info(f"Claude responded (session={new_session_id}, chars={len(response)})")
         return response, new_session_id
     except json.JSONDecodeError:
         error_text = result.stdout or result.stderr or ""
         if "No conversation found" in error_text or "session" in error_text.lower():
+            log.warning(f"Session {session_id} expired or not found, retrying without session")
             return None, None  # Signal to retry without session
+        log.error(f"Claude error: {error_text[:200]}")
         return error_text or "Error running Claude", None
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
+    username = update.effective_user.username or update.effective_user.full_name
     if ALLOWED_USERS and user_id not in ALLOWED_USERS:
+        log.warning(f"Unauthorized access attempt from user_id={user_id} ({username})")
         await update.message.reply_text("Not authorized.")
         return
 
     message = update.message.text
+    log.info(f"Message from {username} (id={user_id}): {message[:80]!r}{'...' if len(message) > 80 else ''}")
     sessions = load_sessions()
     session_id = sessions.get(str(user_id))
 
@@ -177,6 +192,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if session_id:
         response, new_session_id = run_claude(message, session_id)
         if response is None:
+            log.info(f"Cleared expired session for user_id={user_id}")
             del sessions[str(user_id)]
             save_sessions(sessions)
             session_id = None
@@ -228,18 +244,16 @@ def main():
         print("Set ALLOWED_USERS in .env file")
         return
 
-    print("Starting bot...")
-    print(f"Workspace: {WORKSPACE}")
-    print(
-        f"Allowed users: {ALLOWED_USERS or 'Everyone (set ALLOWED_USERS to restrict)'}"
-    )
+    log.info("Starting bot...")
+    log.info(f"Workspace: {WORKSPACE}")
+    log.info(f"Allowed users: {ALLOWED_USERS or 'Everyone (set ALLOWED_USERS to restrict)'}")
 
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("new", new_session))
     app.add_handler(CommandHandler("status", status))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    print("Bot running. Send messages on Telegram.")
+    log.info("Bot running. Send messages on Telegram.")
     app.run_polling()
 
 
